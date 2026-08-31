@@ -1,6 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/CreateUser.dto';
+import { UpdateUserDto } from './dto/UpdateUser.dto';
+import { PasswordUtil } from '../common/utils/password.util';
 
 @Injectable()
 export class UsersService {
@@ -8,6 +10,18 @@ export class UsersService {
 
   async createUser(dto: CreateUserDto) {
     return this.prisma.user.create({
+      data: {
+        ...dto,
+        password: await PasswordUtil.hashPassword(dto.password),
+      },
+    });
+  }
+
+  async updateUser(id: string, dto: UpdateUserDto) {
+    return this.prisma.user.update({
+      where: {
+        id,
+      },
       data: dto,
     });
   }
@@ -17,15 +31,24 @@ export class UsersService {
       where: {
         id,
       },
+      omit: {
+        password: true,
+      },
     });
   }
 
   async deleteUser(id: string) {
-    return this.prisma.user.delete({
-      where: {
-        id,
-      },
-    });
+    const user = await this.findUser(id);
+
+    if (user != null) {
+      return this.prisma.user.delete({
+        where: {
+          id,
+        },
+      });
+    } else {
+      throw new NotFoundException('User is not found');
+    }
   }
 
   async getAllUsers() {
