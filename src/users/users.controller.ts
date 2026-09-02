@@ -13,6 +13,9 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/CreateUser.dto';
 import { UpdateUserDto } from './dto/UpdateUser.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Roles } from '../auth/decorators/roles.decorators';
+import { RolesGuard } from './guards/roles.guard';
+import { Role } from '@prisma/client';
 
 @Controller('users')
 export class UsersController {
@@ -33,8 +36,9 @@ export class UsersController {
     return this.usersService.deleteUser(uuid);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   async getAllUsers() {
     return this.usersService.getAllUsers();
   }
