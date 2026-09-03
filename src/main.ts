@@ -10,11 +10,18 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
   app.use(helmet());
-  app.useGlobalPipes(new ValidationPipe());
-  await app.listen(configService.get('PORT') ?? 3000);
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
 
   const config = new DocumentBuilder().setTitle('LMS API').build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, documentFactory);
+
+  await app.listen(configService.get('PORT') ?? 3000);
 }
 bootstrap();

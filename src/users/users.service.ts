@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/CreateUser.dto';
 import { UpdateUserDto } from './dto/UpdateUser.dto';
 import { PasswordUtil } from '../common/utils/password.util';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -37,6 +38,14 @@ export class UsersService {
     });
   }
 
+  async findUserByEmail(email: string) {
+    return this.prisma.user.findUnique({
+      where: {
+        email,
+      },
+    });
+  }
+
   async deleteUser(id: string) {
     const user = await this.findUser(id);
 
@@ -51,7 +60,67 @@ export class UsersService {
     }
   }
 
-  async getAllUsers() {
-    return this.prisma.user.findMany();
+  async getAllUsers(paginationDto) {
+    const { skip, limit, sortBy, sortOrder } = paginationDto;
+
+    const orderBy: Prisma.UserOrderByWithRelationInput = {
+      [sortBy]: sortOrder,
+    };
+
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        skip,
+        take: limit,
+        orderBy,
+        omit: {
+          password: true,
+          refreshTokenHash: true,
+        },
+      }),
+      this.prisma.user.count(),
+    ]);
+
+    return {
+      data: users,
+      meta: {
+        total,
+        skip,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: skip + limit < total,
+        hasPrevPage: skip > 0,
+      },
+    };
+  }
+
+  async updateRefreshToken(id: string, hash: string) {
+    return this.prisma.user.update({
+      where: {
+        id,
+      },
+      data: {
+        refreshTokenHash: hash,
+      },
+    });
+  }
+
+  async getRefreshToken(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id,
+      },
+    });
+    return user?.refreshTokenHash || null;
+  }
+
+  async clearRefreshToken(id: string) {
+    return this.prisma.user.update({
+      where: {
+        id,
+      },
+      data: {
+        refreshTokenHash: null,
+      },
+    });
   }
 }
