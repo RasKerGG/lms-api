@@ -20,11 +20,94 @@ model User {
   role Role @default(STUDENT)
   refreshTokenHash String? @unique
   createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @updatedAt @map("updated_at")
+  courses Course[]
+
+  enrollments Enrollment[]
+
+  @@map("users")
+}
+
+model Course {
+  id String @id @default(uuid())
+  name String
+  description String?
+  category String
+  level Level
+  status Status?
+  authorId String @map("author_id")
+  author User @relation(fields: [authorId], references: [id])
+  modules Module[]
+
+  enrollments Enrollment[]
+
+  @@map("courses")
+}
+
+model Enrollment {
+  id String @id @default(uuid())
+  studentId String @map("student_id")
+  courseId String @map("course_id")
+  status EnrollmentStatus 
+  enrolledAt DateTime @default(now()) @map("enrolled_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  student User @relation(fields: [studentId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+
+  @@unique([studentId, courseId])
+
+  @@map("enrollments")
+}
+
+model Module {
+  id String @id @default(uuid())
+  name String
+  description String
+  moduleNumber Int @map("module_number")
+  lessons Lesson[]
+
+  courseId String @map("course_id")
+  course Course @relation(fields: [courseId], references: [id])
+
+  @@map("modules")
+}
+
+model Lesson {
+  id String @id @default(uuid())
+  name String
+  text String?
+  lessonNumber Int @map("lesson_number")
+  mediaUrl String? @map("media_url")
+
+  moduleId String @map("module_id")
+  module Module @relation(fields: [moduleId], references: [id])
+
+  @@map("lessons")
 }
 
 enum Role {
   ADMIN
   TEACHER
   STUDENT
+}
+
+enum Level {
+  NEWBIE
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum Status {
+  ACTIVE
+  DRAFT
+  ARCHIVED
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  DROPPED
 }

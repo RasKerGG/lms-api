@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { CoursesService } from './courses.service';
+import { CoursesService } from './services/courses.service';
 import { beforeEach, describe, expect, it } from '@jest/globals';
 
 describe('CoursesService', () => {
