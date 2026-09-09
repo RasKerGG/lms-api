@@ -1,7 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCourseDto } from '../dto/CreateCourse.dto';
 import { UpdateCourseDto } from '../dto/UpdateCourse.dto';
+import { CoursesPaginationDto } from '../dto/CoursesPagination.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class CoursesService {
@@ -19,12 +21,50 @@ export class CoursesService {
       },
     });
   }
-  async updateCourse(dto: UpdateCourseDto, courseId: string) {
-    await this.prismaService.course.update({
+
+  async updateCourse(dto: UpdateCourseDto, id: string) {
+    return await this.prismaService.course.update({
       where: {
-        courseId,
+        id,
       },
       data: dto,
     });
+  }
+
+  async getAllCourses(dto: CoursesPaginationDto) {
+    const { sortBy, sortOrder, page = 1, limit = 10 } = dto;
+
+    const where: Prisma.CourseWhereInput = {};
+
+    if (dto.level) where.level = dto.level;
+    if (dto.category) where.category = dto.category;
+    if (dto.status) where.status = dto.status;
+
+    return await this.prismaService.course.findMany({
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: {
+        [sortBy]: sortOrder,
+      },
+      where,
+    });
+  }
+
+  async getCourse(id: string) {
+    return await this.prismaService.course.findUnique({
+      where: { id },
+    });
+  }
+
+  async deleteCourse(id: string) {
+    const course = await this.getCourse(id);
+
+    if (course) {
+      return await this.prismaService.course.delete({
+        where: { id },
+      });
+    } else {
+      throw new NotFoundException('Course not found');
+    }
   }
 }
